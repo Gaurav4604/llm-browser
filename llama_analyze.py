@@ -1,17 +1,21 @@
 from ollama import chat
-from search import fetch_search_results_bs4, scrape_webpage_content
+from search import fetch_search_results, scrape_webpage_content
+from queries import generate_search_query
 
 
 def fetch_and_analyze_with_ollama(query):
     # Step 1: Fetch search results
     print("Fetching search results...")
-    search_results = fetch_search_results_bs4(query)
+    search_results = fetch_search_results(generate_search_query(query))
 
     # Step 2: Scrape content from top results
     print("Scraping content from search results...")
+    print(search_results)
     content_snippets = []
     for result in search_results:
+        print("hello")
         content = scrape_webpage_content(result["link"])
+        print(content)
         if content:
             content_snippets.append(content)
 
@@ -41,6 +45,7 @@ def fetch_and_analyze_with_ollama(query):
     response = chat(
         messages=[system_message, user_message],
         model="llama3.2:1b",
+        options={"num_ctx": 16384},
         stream=True,
     )
     for part in response:
@@ -48,4 +53,5 @@ def fetch_and_analyze_with_ollama(query):
 
 
 if __name__ == "__main__":
-    fetch_and_analyze_with_ollama("good examples of semantic web design")
+    fetch_and_analyze_with_ollama("explain me what machine learning is")
+    # print(fetch_search_results("what is machine learning?"))

@@ -59,7 +59,6 @@ def fetch_and_analyze_with_ollama(query):
 
     # Step 2: Scrape content from top results
     print("Scraping content from search results...")
-    print(search_results)
     content_snippets = []
     for result in search_results:
         content = scrape_webpage_content(result["link"])

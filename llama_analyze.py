@@ -19,6 +19,33 @@ and provide a concise summary.
 Retain keywords present in the texts
 """
 
+prompt_ground_data_to_query = """
+You are a LLM that can extract valid content from a given text.
+You are given a large text summary, your role is to
+extract the most relevant information from the text that is directly related to the grounding query.
+"""
+
+prompt_content_template = "{} this is the summary, {} this is my grounding query"
+
+
+def extract_valid_content(content, grounding_query):
+    print("Extracting valid content")
+    response = chat(
+        messages=[
+            {
+                "role": "system",
+                "content": prompt_ground_data_to_query,
+            },
+            {
+                "role": "user",
+                "content": prompt_content_template.format(content, grounding_query),
+            },
+        ],
+        model="llama3.2:1b",
+        options={"num_ctx": 16384},
+    )
+    return response["message"]["content"]
+
 
 def summarize_with_llama(prev, data):
     print("Summarizing with Llama...")
@@ -54,15 +81,20 @@ def summarize_with_llama(prev, data):
 
 def fetch_and_analyze_with_ollama(query):
     # Step 1: Fetch search results
+    search_query = generate_search_query(query)
+    print("Search query: {}".format(search_query))
+
     print("Fetching search results...")
-    search_results = fetch_search_results(generate_search_query(query))
+    search_results = fetch_search_results(search_query)
 
     # Step 2: Scrape content from top results
     print("Scraping content from search results...")
     content_snippets = []
     for result in search_results:
+        print(result)
         content = scrape_webpage_content(result["link"])
         if content:
+            summary = extract_valid_content(content, search_query)
             content_snippets.append(content)
 
     if not content_snippets:

@@ -1,18 +1,51 @@
 import ollama
+import openmeteo_requests
+
+import requests_cache
+import pandas as pd
+from retry_requests import retry
+
+cache_session = requests_cache.CachedSession(".cache", expire_after=3600)
+retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+openmeteo = openmeteo_requests.Client(session=retry_session)
 
 
-# Define the dummy function for geolocation
-def get_geolocation(name):
-    print(f"Dummy function called to get geolocation for: {name}")
-    # Return dummy coordinates for the location
-    return {"latitude": "-35.0281", "longitude": "138.8074"}
+url = "https://api.open-meteo.com/v1/forecast"
 
 
 # Define the dummy function for weather
 def get_current_weather(latitude, longitude):
-    print(f"Dummy function called with latitude: {latitude}, longitude: {longitude}")
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "hourly": "temperature_2m",
+    }
+    responses = openmeteo.weather_api(url, params=params)
+    response = responses[0]
+    print(f"function called with latitude: {latitude}, longitude: {longitude}")
     # Return dummy weather data
-    return {"temperature": "22°C", "condition": "Sunny"}
+    # Process first location. Add a for-loop for multiple locations or weather models
+    print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
+    print(f"Elevation {response.Elevation()} m asl")
+    print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
+    print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
+
+    # Process hourly data. The order of variables needs to be the same as requested.
+    hourly = response.Hourly()
+    hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
+
+    hourly_data = {
+        "date": pd.date_range(
+            start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
+            end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
+            freq=pd.Timedelta(seconds=hourly.Interval()),
+            inclusive="left",
+        )
+    }
+    hourly_data["temperature_2m"] = hourly_temperature_2m
+
+    hourly_dataframe = pd.DataFrame(data=hourly_data)
+    print(hourly_dataframe)
 
 
 # Simulate chat and tool invocation
@@ -21,27 +54,10 @@ response = ollama.chat(
     messages=[
         {
             "role": "user",
-            "content": "What is the weather in `Hahndorf, South Australia`?",
+            "content": "Is it going to rain tomorrow in Saitama, Japan?",
         }
     ],
     tools=[
-        {
-            "type": "function",
-            "function": {
-                "name": "get_geolocation",
-                "description": "Get the geographical coordinates of a place",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "description": "The name of the place for which to get the coordinates",
-                        },
-                    },
-                    "required": ["name"],
-                },
-            },
-        },
         {
             "type": "function",
             "function": {
@@ -51,12 +67,12 @@ response = ollama.chat(
                     "type": "object",
                     "properties": {
                         "latitude": {
-                            "type": "string",
-                            "description": "The Latitude of the location, along with North/South Hemisphere",
+                            "type": "integer",
+                            "description": "The Latitude with Decimal point of the location, along with North/South Hemisphere",
                         },
                         "longitude": {
-                            "type": "string",
-                            "description": "The Longitude of the location, along with East/West",
+                            "type": "integer",
+                            "description": "The Longitude with Decimal point of the location, along with East/West",
                         },
                     },
                     "required": ["latitude", "longitude"],
@@ -66,23 +82,23 @@ response = ollama.chat(
     ],
 )
 
-print(response["message"])
+print(response["message"]["tool_calls"])
 
 # Handle response
-if "tool_calls" in response["message"]:
+if response["message"]["tool_calls"] is not None:
     tools = response["message"]["tool_calls"]
-    coordinates = None
+    # coordinates = None
 
     for tool in tools:
-        if tool["function"]["name"] == "get_geolocation":
-            params = tool["function"]["arguments"]
-            name = params.get("name")
-            coordinates = get_geolocation(name)  # Call geolocation function
-            print("Coordinates:", coordinates)
+        # if tool["function"]["name"] == "get_geolocation":
+        #     params = tool["function"]["arguments"]
+        #     name = params.get("name")
+        #     coordinates = get_geolocation(name)  # Call geolocation function
+        #     print("Coordinates:", coordinates)
 
-        if tool["function"]["name"] == "get_current_weather" and coordinates:
-            latitude = coordinates["latitude"]
-            longitude = coordinates["longitude"]
+        if tool["function"]["name"] == "get_current_weather":
+            latitude = tool["function"]["arguments"]["latitude"]
+            longitude = tool["function"]["arguments"]["longitude"]
             weather_data = get_current_weather(
                 latitude, longitude
             )  # Call weather function

@@ -27,7 +27,13 @@ def scrape_webpage_content(url):
             return None
 
         # Feed the response content to Trafilatura
-        downloaded = trafilatura.extract(response.text)
+        downloaded = trafilatura.extract(
+            response.text,
+            favor_precision=True,
+            include_links=True,
+            include_tables=True,
+            deduplicate=True,
+        )
         if not downloaded:
             return None
         print("link \t" + url + "\t scraped")

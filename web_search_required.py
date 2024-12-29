@@ -2,7 +2,7 @@ import ollama
 
 
 # Define the Llama-based classifier with keyword enhancement
-def llama_based_check_with_keywords(question):
+def llama_check_if_web_search_required(question):
     keywords = [
         "current",
         "latest",

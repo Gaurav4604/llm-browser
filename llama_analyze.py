@@ -1,6 +1,7 @@
 from ollama import chat
 from search import fetch_search_results, scrape_webpage_content
 from queries import generate_search_query
+from web_search_required import llama_check_if_web_search_required
 
 
 prompt_summarize_mono = """
@@ -98,57 +99,74 @@ def check_if_context_is_valid(question, context):
         options={"num_ctx": 16384},
     )
     print(response["message"]["content"])
-    return "No" in response["message"]["content"]
+    return not "No" in response["message"]["content"]
 
 
-def answer_user_question(question, context):
-    system_message = {
-        "role": "system",
-        "content": "You are a helpful assistant. Given the following content from web search results, provide the best possible answer to the user's question. Ensure your response is concise and accurate.",
-    }
+def answer_user_question(question, context=None):
+    if context is not None:
+        system_message = {
+            "role": "system",
+            "content": "You are a helpful assistant. Given the following content from web search results, provide the best possible answer to the user's question. Ensure your response is concise and accurate.",
+        }
 
-    # Send user question and combined content
-    user_message = {
-        "role": "user",
-        "content": f"Question: {question}\n\nContent:\n{context}",
-    }
+        # Send user question and combined content
+        user_message = {
+            "role": "user",
+            "content": f"Question: {question}\n\nContent:\n{context}",
+        }
 
-    # Call the chat API
-    response = chat(
-        messages=[system_message, user_message],
-        model="llama3.2",
-        options={"num_ctx": 16384},
-    )
-    return response["message"]["content"]
+        # Call the chat API
+        response = chat(
+            messages=[system_message, user_message],
+            model="llama3.2",
+            options={"num_ctx": 16384},
+        )
+        return response["message"]["content"]
+    else:
+        response = chat(
+            messages=[
+                {
+                    "role": "user",
+                    "content": question,
+                }
+            ],
+            model="llama3.2",
+        )
+        return response["message"]["content"]
 
 
 def fetch_and_analyze_with_ollama(query):
     # Step 1: Fetch search results
-    search_query = generate_search_query(query)
-    print("Search query: {}".format(search_query))
+    if llama_check_if_web_search_required(query):
+        search_query = generate_search_query(query)
+        print("Search query: {}".format(search_query))
 
-    print("Fetching search results...")
-    search_results = fetch_search_results(search_query)
+        print("Fetching search results...")
+        search_results = fetch_search_results(search_query)
 
-    # Step 2: Scrape content from top results
-    print("Scraping content from search results...")
-    aggregate_summary = ""
-    response = None
-    for result in search_results:
-        print(result)
-        content = scrape_webpage_content(result["link"])
-        if content:
-            summary = extract_valid_content(content, search_query)
-            if check_if_context_is_valid(query, summary):
-                print("Content Validated, Answering User Query...")
-                response = answer_user_question(query, summary)
-                break
-            else:
-                aggregate_summary = summarize_with_llama(aggregate_summary, summary)
-    if response is not None:
-        print(response)
+        # Step 2: Scrape content from top results
+        print("Scraping content from search results...")
+        aggregate_summary = ""
+        response = None
+        for result in search_results:
+            print(result)
+            content = scrape_webpage_content(result["link"])
+            if content:
+                summary = extract_valid_content(content, search_query)
+                if check_if_context_is_valid(query, summary):
+                    print("Content Validated, Answering User Query...")
+                    response = answer_user_question(query, summary)
+                    break
+                else:
+                    aggregate_summary = summarize_with_llama(aggregate_summary, summary)
+        if response is not None:
+            print(response)
+        else:
+            response = answer_user_question(query, aggregate_summary)
+            print(response)
     else:
-        response = answer_user_question(query, aggregate_summary)
+        print("No web search required. Answering user query directly...")
+        response = answer_user_question(query)
         print(response)
 
 

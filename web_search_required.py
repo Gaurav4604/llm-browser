@@ -58,14 +58,23 @@ def llama_based_check_with_keywords(question):
     return not (response["message"]["content"].find("No Web Search") != -1)
 
 
-questions = [
-    "What is the weather forecast for tomorrow?",
-    "Explain the process of photosynthesis.",
-    "When is Troye Sivan's next tour?",
-    "Should I wear a hat tomorrow?",
-]
+# questions = [
+#     "What is the weather forecast for tomorrow?",
+#     "Explain the process of photosynthesis.",
+#     "When is Troye Sivan's next tour?",
+#     "Should I wear a hat tomorrow?",
+# ]
 
 
-for question in questions:
-    print(f"Question: {question}")
-    print(f"Classification: {llama_based_check_with_keywords(question)}\n")
+# for question in questions:
+#     print(f"Question: {question}")
+#     print(f"Classification: {llama_based_check_with_keywords(question)}\n")
+
+
+# step 1: get search query
+# step 2: get search results from web search engine
+# step 3: for each search result, get summary of webpage using LLM,
+#         check if summary answers question, if yes, return answer
+#         else, continue to next search result, aggregate for a common summary
+# step 4: build out a common summary
+# step 5: re-ask the question with the common summary as context

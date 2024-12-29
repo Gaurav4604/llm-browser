@@ -79,6 +79,49 @@ def summarize_with_llama(prev, data):
     return response["message"]["content"]
 
 
+def check_if_context_is_valid(question, context):
+    system_message = {
+        "role": "system",
+        "content": "You are a helpful assistant. Given the following content from web search results, Tell me, as a Yes/No, if the provided context can answer my question or not",
+    }
+
+    # Send user question and combined content
+    user_message = {
+        "role": "user",
+        "content": f"Question: {question}\n\nContent:\n{context}",
+    }
+
+    # Call the chat API
+    response = chat(
+        messages=[system_message, user_message],
+        model="llama3.2",
+        options={"num_ctx": 16384},
+    )
+    print(response["message"]["content"])
+    return "No" in response["message"]["content"]
+
+
+def answer_user_question(question, context):
+    system_message = {
+        "role": "system",
+        "content": "You are a helpful assistant. Given the following content from web search results, provide the best possible answer to the user's question. Ensure your response is concise and accurate.",
+    }
+
+    # Send user question and combined content
+    user_message = {
+        "role": "user",
+        "content": f"Question: {question}\n\nContent:\n{context}",
+    }
+
+    # Call the chat API
+    response = chat(
+        messages=[system_message, user_message],
+        model="llama3.2",
+        options={"num_ctx": 16384},
+    )
+    return response["message"]["content"]
+
+
 def fetch_and_analyze_with_ollama(query):
     # Step 1: Fetch search results
     search_query = generate_search_query(query)
@@ -89,48 +132,24 @@ def fetch_and_analyze_with_ollama(query):
 
     # Step 2: Scrape content from top results
     print("Scraping content from search results...")
-    content_snippets = []
+    aggregate_summary = ""
+    response = None
     for result in search_results:
         print(result)
         content = scrape_webpage_content(result["link"])
         if content:
             summary = extract_valid_content(content, search_query)
-            content_snippets.append(content)
-
-    if not content_snippets:
-        return "Unable to retrieve sufficient content from search results."
-
-    # Step 3: Combine content
-    print("Preparing data for analysis...")
-    # combined_content = "\n\n".join(content_snippets)
-
-    # # Step 4: Interact with LLaMA using ollama.chat
-    # print("Analyzing content with LLaMA...")
-    summary = ""
-    for snippet in content_snippets:
-        summary = summarize_with_llama(summary, snippet)
-
-    # Send system message to set the task
-    system_message = {
-        "role": "system",
-        "content": "You are a helpful assistant. Given the following content from web search results, provide the best possible answer to the user's question. Ensure your response is concise and accurate.",
-    }
-
-    # Send user question and combined content
-    user_message = {
-        "role": "user",
-        "content": f"Question: {query}\n\nContent:\n{summary}",
-    }
-
-    # Call the chat API
-    response = chat(
-        messages=[system_message, user_message],
-        model="llama3.2",
-        options={"num_ctx": 16384},
-        stream=True,
-    )
-    for part in response:
-        print(part["message"]["content"], end="", flush=True)
+            if check_if_context_is_valid(query, summary):
+                print("Content Validated, Answering User Query...")
+                response = answer_user_question(query, summary)
+                break
+            else:
+                aggregate_summary = summarize_with_llama(aggregate_summary, summary)
+    if response is not None:
+        print(response)
+    else:
+        response = answer_user_question(query, aggregate_summary)
+        print(response)
 
 
 if __name__ == "__main__":

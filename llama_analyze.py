@@ -136,8 +136,9 @@ def answer_user_question(question, context=None):
 
 
 def fetch_and_analyze_with_ollama(query):
-    # Step 1: Fetch search results
+    # Check if web search is needed
     if llama_check_if_web_search_required(query):
+        # Step 1: Fetch search results
         search_query = generate_search_query(query)
         print("Search query: {}".format(search_query))
 
@@ -150,17 +151,25 @@ def fetch_and_analyze_with_ollama(query):
         response = None
         for result in search_results:
             print(result)
+            # Scrape content from the webpage
             content = scrape_webpage_content(result["link"])
             if content:
+                # Extract content in relation to search query, from webpage
                 summary = extract_valid_content(content, search_query)
+
+                # Check content validity
                 if check_if_context_is_valid(query, summary):
                     print("Content Validated, Answering User Query...")
                     response = answer_user_question(query, summary)
                     break
+                # Content not enough, add to summary and search more
                 else:
                     aggregate_summary = summarize_with_llama(aggregate_summary, summary)
+
+        # response defined, since we found a valid context in summary
         if response is not None:
             print(response)
+        # response not yet defined, use aggregated summary
         else:
             response = answer_user_question(query, aggregate_summary)
             print(response)

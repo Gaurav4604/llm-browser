@@ -5,14 +5,14 @@ from web_search_required import llama_check_if_web_search_required
 
 
 prompt_summarize_mono = """
-You are a LLM that can summarize text.
+You can summarize text.
 You are given a piece of text and your task
 is to summarize it, retain the most important
 points present in the query and provide a concise summary.
 Retain keywords present in the text
 """
 prompt_compare_merge_summary = """
-You are a LLM that can summarize text.
+You can summarize text.
 You are given two pieces of text and your task
 is to compare them, retain the most important
 points present in the both documents, merge them
@@ -21,7 +21,7 @@ Retain keywords present in the texts
 """
 
 prompt_ground_data_to_query = """
-You are a LLM that can extract valid content from a given text.
+You can extract valid content from a given text.
 You are given a large text summary, your role is to
 extract the most relevant information from the text that is directly related to the grounding query.
 """

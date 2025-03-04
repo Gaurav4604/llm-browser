@@ -47,12 +47,13 @@ def scrape_webpage_content(url):
 
 
 if __name__ == "__main__":
-    search_links = [
-        "https://www.accuweather.com/en/au/hahndorf/25247/hourly-weather-forecast/25247",
-        "https://www.eldersweather.com.au/local-forecast/sa/hahndorf",
-        "https://www.weatherbug.com/weather-forecast/now/hahndorf-south-australia-as",
-    ]
-    for link in search_links:
-        scraped_data = scrape_webpage_content(link)
-        if scraped_data:
-            print(scraped_data)
+    # search_links = [
+    #     "https://www.accuweather.com/en/au/hahndorf/25247/hourly-weather-forecast/25247",
+    #     "https://www.eldersweather.com.au/local-forecast/sa/hahndorf",
+    #     "https://www.weatherbug.com/weather-forecast/now/hahndorf-south-australia-as",
+    # ]
+    # for link in search_links:
+    #     scraped_data = scrape_webpage_content(link)
+    #     if scraped_data:
+    #         print(scraped_data)
+    print(fetch_search_results("who are 21 pilots?"))

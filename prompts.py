@@ -2,6 +2,11 @@ SYSTEM_QUERY_DECOMPOSE = f"""
 You are a statement decomposer,
 Your role is to decompose complex questions into simpler sub-questions,
 If you feel that the question is basic enough, you can let it remain the same
+
+This query will be used for a google search,
+so ensure that the query is very concise
+
+NOTE: TRY TO BREAK THE CONCEPT DOWN, AS LITTLE AS POSSIBLE
 """
 
 QUERY_DECOMPOSE_EXAMPLE = """
@@ -121,4 +126,72 @@ if required:
 <question>
 {}
 </questions>
+"""
+
+
+"""
+#######################################
+PROMPTS TO CONSUME AND UNDERSTAND WEB CONTENT
+#######################################
+"""
+
+
+WEB_GREEN_LIGHT_SYSTEM_PROMPT = """
+You are responsible for reading structured information,
+which contains:
+1. A link to the website
+2. A short description about the content of the website
+
+Using the following, your role is to select a subset of the websites,
+which can be scraped
+
+Your assessment criteria should be based on the following:
+
+1. do they provide any explanation to the question, the user has asked?
+2. do they display examples that could be useful in answering the user's question
+
+"""
+
+
+WEB_GREEN_LIGHT_PROMPT = """
+The following are the websites, which contain link, and a short description about the website
+
+<sites>
+{}
+<sites>
+
+The following is the question they're intended to answer
+
+<question>
+{}
+<question>
+
+select a subset of the following sites
+
+BE EXTREMELY STRICT IN YOUR LINK ASSESSMENT, TRY TO SELECT AS LOW A NUMBER OF LINKS AS POSSIBLE
+"""
+
+
+WEB_ASSESS_PAGE_CONTENT_SYSTEM = """
+You are responsible for assessing the content of a webpage,
+Your role check if a given page answers user's question,
+if so, you should return the answer to the user's question
+"""
+
+WEB_ASSESS_PAGE_CONTENT_PROMPT = """
+The following is the content of a webpage
+
+<web-page>
+{}
+<web-page>
+
+using the above, answer this question
+<question>
+{}
+<question>
+
+and also this question
+<question>
+{}
+<question>
 """

@@ -195,3 +195,108 @@ and also this question
 {}
 <question>
 """
+
+
+QUERY_DECOMPOSE_NEEDED_SYSTEM = f"""
+Your role is to assess whether a query should be decomposed into multiple sub-queries before processing.
+
+A query requires decomposition if it meets one or more of these criteria:
+
+1. MULTIPLE DISTINCT TOPICS: The query contains separate questions that could be answered independently.
+   Example: "What is the capital of France and how do I install Python on Windows?"
+
+2. COMPLEX REASONING REQUIREMENTS: 
+   a. The query requires breaking down a complex topic into simpler components
+      Example: "Explain how transformer models work in NLP"
+   
+   b. The query requests comprehensive characteristics of a complex subject
+      Example: "What are all the considerations for implementing a production RAG system?"
+   
+   c. The query involves multi-step reasoning or calculations
+      Example: "If I invest $1000 with 5% compound interest, how much will I have after 10 years, and what percentage of that is profit?"
+
+3. DOMAIN EXPERTISE SPANNING: The query spans multiple domains of knowledge
+   Example: "How do economic policies affect climate change mitigation efforts?"
+
+4. TEMPORAL REASONING: The query requires reasoning across different time periods
+   Example: "Compare machine learning approaches from the 1990s to current methods"
+
+5. COMPARATIVE ANALYSIS: The query asks for comparison between multiple entities
+   Example: "Compare and contrast PyTorch, TensorFlow, and JAX for LLM deployment"
+
+6. REQUEST FOR EXHAUSTIVE INFORMATION: The query asks for "all" or "comprehensive" information
+   Example: "List all the parameters in the LLaMA 3 model"
+
+DOES NOT need decomposition:
+- Simple, focused questions about a single concept
+- Clear, direct requests for specific information
+- Basic how-to questions with a single objective
+- Yes/no questions or simple classification tasks
+
+Your task is to return a JSON object with a single boolean field "decompose_needed".
+"""
+
+QUERY_DECOMPOSE_NEEDED_PROMPT = """
+Analyze the following query and determine if it requires decomposition into sub-queries:
+
+Query: {}
+
+Provide your reasoning step by step before making your final decision.
+"""
+
+# Example exchanges to add
+QUERY_DECOMPOSE_EXAMPLES = [
+    {
+        "role": "user",
+        "content": "Analyze the following query and determine if it requires decomposition into sub-queries:\n\nQuery: How do I fine-tune BERT for text classification?\n\nProvide your reasoning step by step before making your final decision.",
+    },
+    {
+        "role": "assistant",
+        "content": """
+Step-by-step reasoning:
+1. This query is about a single topic: fine-tuning BERT for text classification.
+2. While fine-tuning BERT involves multiple steps, it's a standard process with a clear singular objective.
+3. The query doesn't combine multiple unrelated topics.
+4. It doesn't require extensive comparative analysis.
+5. It requests a specific process rather than comprehensive details about multiple subjects.
+
+Final decision: This query does not need decomposition. It's a focused how-to question about a specific ML task.
+
+{"decompose_needed": false}
+""",
+    },
+    {
+        "role": "user",
+        "content": "Analyze the following query and determine if it requires decomposition into sub-queries:\n\nQuery: What are the differences between various embedding models, and how do I implement a vector database with FAISS for RAG?\n\nProvide your reasoning step by step before making your final decision.",
+    },
+    {
+        "role": "assistant",
+        "content": """
+Step-by-step reasoning:
+1. This query contains two distinct parts:
+   - Comparing different embedding models (analytical/comparative)
+   - Implementing a vector database with FAISS (implementation/how-to)
+2. The first part requires comparative analysis across multiple embedding models.
+3. The second part involves a separate implementation task.
+4. These could be addressed independently and require different types of responses.
+5. The first part alone could be complex enough for its own query, as there are many embedding models.
+
+Final decision: This query needs decomposition into at least two sub-queries.
+
+{"decompose_needed": true}
+""",
+    },
+]
+
+
+CONDENSE_AND_ANSWER = """
+Your role is to answer the user's question, using the context provided to you.
+
+<context>
+{}
+<context>
+
+<question>
+{}
+<question>
+"""

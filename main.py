@@ -1,9 +1,5 @@
 import argparse
-from llama_analyze import (
-    fetch_and_analyze_with_ollama,
-    generate_search_query,
-    fetch_search_results,
-)
+from utils import QueryAgent
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -14,4 +10,10 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    fetch_and_analyze_with_ollama(args.query)
+    agent = QueryAgent()
+
+    result = agent.execute(args.query)
+
+    print("\nFinal Answer:")
+    print(f"Question: {result.question}")
+    print(f"Answer: {result.answer}")
